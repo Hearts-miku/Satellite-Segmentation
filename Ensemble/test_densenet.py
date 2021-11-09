@@ -18,6 +18,11 @@ from PIL import Image
 from os.path import expanduser
 home = expanduser("~")
 
+'''
+Only used for testing DenseNet
+'''
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_dir', default='../Data/val/')  # training dataset
 parser.add_argument('--output_dir', default='./output')  # training dataset

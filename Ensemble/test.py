@@ -28,6 +28,12 @@ from models.DDRNet import DDRNet
 from models.HRNet import HighResolutionNet
 
 home = expanduser("~")
+
+'''
+Choose the networks
+Include 'UNet', 'FCNVGG', 'FCNResNet'
+You can add other networks which in 'models' by yourself
+'''
 method = 'UNet'
 
 parser = argparse.ArgumentParser()

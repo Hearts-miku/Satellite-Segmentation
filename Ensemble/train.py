@@ -26,8 +26,15 @@ from models.FCN_ResNet import FCN_ResNet
 from models.DDRNet import DDRNet
 from models.HRNet import HighResolutionNet
 
+# Please change the batch size and epoch based on your hardware
 batch_size = 1
 epoch = 500
+
+'''
+Select method
+Here provide 'DenseNet', 'UNet', 'FCNVGG', 'FCNResNet'
+You can build other networks which in 'models' by yourself.
+'''
 method = 'UNet'
 
 parser = argparse.ArgumentParser()
@@ -44,49 +51,14 @@ def to_label(outputs):
     o = np.argmax(outputs, axis=1)
     return o
 
-
-def validation(feature, net, loader):
-    feature.eval()
-    net.eval()
-    total_loss = 0
-    for ib, (data, lbl) in enumerate(loader):
-        inputs = Variable(data).cuda()
-        lbl = Variable(lbl.float().unsqueeze(1)).cuda()
-
-        feats = feature(inputs)
-        msk = net(feats)
-
-        loss = F.binary_cross_entropy_with_logits(msk, lbl)
-        total_loss += loss.item()
-    feature.train()
-    net.train()
-    return total_loss / len(loader)
-
-def validation1(feature, loader):
-    feature.eval()
-
-    total_loss = 0
-    for ib, (data, lbl) in enumerate(loader):
-        inputs = Variable(data).cuda()
-        lbl = Variable(lbl.float().unsqueeze(1)).cuda()
-        lbl = one_hot(lbl)
-        msk = feature(inputs)
-
-        loss = F.binary_cross_entropy_with_logits(msk, lbl)
-        total_loss += loss.item()
-        del inputs, msk, lbl, loss
-        gc.collect()
-
-    feature.train()
-    return total_loss / len(loader)
-
+#save for densenet
 def save(check_dir, feature, deconv):
     filename = ('%s/deconv.pth' % (check_dir))
     torch.save(deconv.state_dict(), filename)
     filename = ('%s/dense_feature.pth' % (check_dir))
     torch.save(feature.state_dict(), filename)
 
-
+# dave for other networks
 def save1(check_dir, feature, method):
     filename = ('%s/'% (check_dir) + method + '_feature.pth')
     torch.save(feature.state_dict(), filename)
@@ -99,6 +71,7 @@ def make_image_grid(img, mean, std):
         img[i] += mean[i]
     return img
 
+# change into one-hot code
 def one_hot(lbl):
     tmp = lbl.cpu().numpy()
     batch = lbl.shape[0]
@@ -155,6 +128,7 @@ def main():
     deconv = Deconv(opt.q)
     deconv.cuda()
 
+    # Data loader
     train_loader = torch.utils.data.DataLoader(
         MyData(train_dir, transform=True, crop=False, hflip=False, vflip=False),
         batch_size=bsize, shuffle=True, num_workers=0, pin_memory=True)
@@ -167,7 +141,6 @@ def main():
         {'params': deconv.parameters(), 'lr': 1e-3},
         ])
 
-    min_loss = 10000.0
     for it in range(iter_num):
         if use_Densenet:
             for ib, (data, lbl) in enumerate(train_loader):
@@ -186,10 +159,8 @@ def main():
                 del inputs, msk, lbl, loss, feats
                 gc.collect()
 
-            sb = validation(feature, deconv, val_loader)
-            if sb < min_loss:
-                save(check_dir, feature, deconv)
-                min_loss = sb
+            save(check_dir, feature, deconv)
+
 
         else:
             for ib, (data, lbl) in enumerate(train_loader):
@@ -210,10 +181,7 @@ def main():
                 del inputs, msk, lbl, loss, feats
                 gc.collect()
 
-            sb = validation1(feature, val_loader)
-            if sb < min_loss:
-                save1(check_dir, feature, method)
-                min_loss = sb
+            save1(check_dir, feature, method)
 
     # Output training loss
     for i in range(train_loss.shape[0]):

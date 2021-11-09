@@ -76,6 +76,8 @@ def main():
         out = torch.zeros((512, 512))
         inputs = Variable(data).cuda()
 
+
+        # First get the output of all networks
         outputs0 = feature0(inputs)
         outputs0 = outputs0.data.cpu().squeeze(1).numpy()
 
@@ -85,6 +87,8 @@ def main():
         outputs2 = feature2(inputs)
         outputs2 = outputs2.data.cpu().squeeze(1).numpy()
 
+
+        # Weighted voting
         '''
         outputs0 = to_label(outputs0)
         outputs1 = to_label(outputs1)
@@ -94,9 +98,18 @@ def main():
         outputs[np.where(outputs <= 0.5)] = 0
         '''
 
+        # Average
         #outputs = np.mean(np.array([outputs0, outputs1, outputs2]), axis=0)
+
+
+        # Weighted average
         outputs = np.mean(np.array([outputs0*0.7, outputs1*0.15, outputs2*0.15]), axis=0)
+
+
+        # Median
         #outputs = np.median(np.array([outputs0, outputs1, outputs2]), axis=0)
+
+        # If use voting method, please annotation this line
         outputs = to_label(outputs)
 
         for ii, msk in enumerate(outputs):
